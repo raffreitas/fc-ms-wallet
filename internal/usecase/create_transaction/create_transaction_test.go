@@ -1,72 +1,43 @@
 package create_transaction
 
 import (
+	"context"
 	"testing"
 
 	"github.com/raffreitas/fc-ms-wallet/internal/entity"
 	"github.com/raffreitas/fc-ms-wallet/internal/event"
+	"github.com/raffreitas/fc-ms-wallet/internal/usecase/mocks"
 	"github.com/raffreitas/fc-ms-wallet/pkg/events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-type TransactionGatewayMock struct {
-	mock.Mock
-}
+func TestCreateTransactionUseCase_Execute(t *testing.T) {
+	client1, _ := entity.NewClient("client1", "j@j.com")
+	account1, _ := entity.NewAccount(client1)
+	account1.Credit(1000)
 
-type AccountGatewayMock struct {
-	mock.Mock
-}
+	client2, _ := entity.NewClient("client2", "j@j2.com")
+	account2, _ := entity.NewAccount(client2)
+	account2.Credit(1000)
 
-func (m *TransactionGatewayMock) Create(transaction *entity.Transaction) error {
-	args := m.Called(transaction)
-	return args.Error(0)
-}
+	mockUow := &mocks.UowMock{}
+	mockUow.On("Do", mock.Anything, mock.Anything).Return(nil)
 
-func (m *AccountGatewayMock) Save(account *entity.Account) error {
-	args := m.Called(account)
-	return args.Error(0)
-}
-
-func (m *AccountGatewayMock) FindByID(id string) (*entity.Account, error) {
-	args := m.Called(id)
-	return args.Get(0).(*entity.Account), args.Error(1)
-}
-
-func TestCreateAccountUseCase_Execute(t *testing.T) {
-	clientFrom, _ := entity.NewClient("John Doe", "jhd@email.com")
-	accountFrom, _ := entity.NewAccount(clientFrom)
-	accountFrom.Credit(1000)
-
-	clientTo, _ := entity.NewClient("Jane Doe", "jnd@email.com")
-	accountTo, _ := entity.NewAccount(clientTo)
-	accountTo.Credit(1000)
-
-	accountMock := &AccountGatewayMock{}
-	accountMock.On("FindByID", accountFrom.ID).Return(accountFrom, nil)
-	accountMock.On("FindByID", accountTo.ID).Return(accountTo, nil)
-
-	transactionMock := &TransactionGatewayMock{}
-	transactionMock.On("Create", mock.Anything).Return(nil)
-
-	dispatcher := events.NewEventDispatcher()
-	event := event.NewTransactionCreated()
-
-	uc := NewCreateTransactionUseCase(transactionMock, accountMock, dispatcher, event)
 	inputDto := CreateTransactionInputDTO{
-		AccountIDFrom: accountFrom.ID,
-		AccountIDTo:   accountTo.ID,
+		AccountIDFrom: account1.ID,
+		AccountIDTo:   account2.ID,
 		Amount:        100,
 	}
 
-	output, err := uc.Execute(inputDto)
+	dispatcher := events.NewEventDispatcher()
+	eventTransaction := event.NewTransactionCreated()
+	ctx := context.Background()
 
+	uc := NewCreateTransactionUseCase(mockUow, dispatcher, eventTransaction)
+	output, err := uc.Execute(ctx, inputDto)
 	assert.Nil(t, err)
 	assert.NotNil(t, output)
-	assert.NotEmpty(t, output.ID)
-
-	accountMock.AssertExpectations(t)
-	transactionMock.AssertExpectations(t)
-	accountMock.AssertNumberOfCalls(t, "FindByID", 2)
-	transactionMock.AssertNumberOfCalls(t, "Create", 1)
+	mockUow.AssertExpectations(t)
+	mockUow.AssertNumberOfCalls(t, "Do", 1)
 }
