@@ -36,6 +36,7 @@ func (h *WebTransactionHandler) CreateTransaction(w http.ResponseWriter, r *http
 	err = json.NewEncoder(w).Encode(output)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
 		return
 	}
 	w.WriteHeader(http.StatusCreated)

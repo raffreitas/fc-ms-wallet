@@ -5,15 +5,18 @@ import (
 	"database/sql"
 	"fmt"
 
+	ckafka "github.com/confluentinc/confluent-kafka-go/kafka"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/raffreitas/fc-ms-wallet/internal/database"
 	"github.com/raffreitas/fc-ms-wallet/internal/event"
+	"github.com/raffreitas/fc-ms-wallet/internal/event/handler"
 	"github.com/raffreitas/fc-ms-wallet/internal/usecase/create_account"
 	"github.com/raffreitas/fc-ms-wallet/internal/usecase/create_client"
 	"github.com/raffreitas/fc-ms-wallet/internal/usecase/create_transaction"
 	"github.com/raffreitas/fc-ms-wallet/internal/web"
 	"github.com/raffreitas/fc-ms-wallet/internal/web/webserver"
 	"github.com/raffreitas/fc-ms-wallet/pkg/events"
+	"github.com/raffreitas/fc-ms-wallet/pkg/kafka"
 	"github.com/raffreitas/fc-ms-wallet/pkg/uow"
 )
 
@@ -24,9 +27,16 @@ func main() {
 	}
 	defer db.Close()
 
+	configMap := ckafka.ConfigMap{
+		"bootstrap.servers": "kafka:29092",
+		"group.id":          "wallet",
+	}
+
+	kafkaProducer := kafka.NewKafkaProducer(&configMap)
+
 	eventDispatcher := events.NewEventDispatcher()
 	transactionCreatedEvent := event.NewTransactionCreated()
-	// eventDispatcher.Register("TransactionCreated", handler)
+	eventDispatcher.Register("TransactionCreated", handler.NewTransactionCreatedKafkaHandler(kafkaProducer))
 
 	clientDb := database.NewClientDB(db)
 	accountDb := database.NewAccountDB(db)
@@ -44,7 +54,7 @@ func main() {
 	createAccountUseCase := create_account.NewCreateAccountUseCase(accountDb, clientDb)
 	createTransactionUseCase := create_transaction.NewCreateTransactionUseCase(uow, eventDispatcher, transactionCreatedEvent)
 
-	webServer := webserver.NewWebServer(":3000")
+	webServer := webserver.NewWebServer(":8080")
 
 	clientHandler := web.NewWebClientHandler(*createClientUseCase)
 	accountHandler := web.NewWebAccountHandler(*createAccountUseCase)
@@ -54,5 +64,6 @@ func main() {
 	webServer.AddHandler("/accounts", accountHandler.CreateAccount)
 	webServer.AddHandler("/transactions", transactionHandler.CreateTransaction)
 
+	fmt.Println("Server is running")
 	webServer.Start()
 }
