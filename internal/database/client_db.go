@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/raffreitas/fc-ms-wallet/internal/entity"
 )
@@ -33,10 +32,8 @@ func (c *ClientDB) Get(id string) (*entity.Client, error) {
 }
 
 func (c *ClientDB) Save(client *entity.Client) error {
-	fmt.Print("Aqui")
 	stmt, err := c.DB.Prepare("INSERT INTO clients (id, name, email, created_at, updated_at) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
-		fmt.Print(err.Error())
 		return err
 	}
 	defer stmt.Close()
