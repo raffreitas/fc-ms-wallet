@@ -10,7 +10,7 @@ internal sealed class CreateTransactionConsumer(IServiceScopeFactory serviceScop
 {
     private readonly ConsumerConfig _consumerConfig = new()
     {
-        BootstrapServers = "kafka:9092",
+        BootstrapServers = "kafka:29092",
         GroupId = "create-balance-consumer-group",
         AutoOffsetReset = AutoOffsetReset.Earliest,
         EnableAutoCommit = true,

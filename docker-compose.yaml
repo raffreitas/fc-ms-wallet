@@ -13,6 +13,11 @@ services:
       dockerfile: src/FC.Wallet.Balances.WebApi/Dockerfile
     ports:
       - "8081:3003"
+    environment:
+      ConnectionStrings__Database: "Host=postgresql;Port=5432;Database=wallet_balances;Username=postgres;Password=postgres;Pooling=True"
+    depends_on:
+     - postgresql
+     - kafka
 
   postgresql:
     image: postgres:latest
@@ -20,9 +25,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=wallet_balances
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: wallet_balances
     volumes:
       - ./scripts/init-wallet-core.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
