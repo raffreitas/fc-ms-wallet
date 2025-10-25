@@ -1,0 +1,6 @@
+@account_id = ""
+
+GET http://localhost:3003/balances/{account_id}
+Accept: application/json
+
+###
