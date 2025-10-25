@@ -5,7 +5,7 @@ services:
     ports:
       - 8080:8080
     volumes:
-      - ./:/app/
+      - ./wallet-core/:/app/
 
   mysql:
     image: mysql:5.7
@@ -17,7 +17,7 @@ services:
     ports:
       - 3306:3306
     volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./scripts/init-wallet-core.sql:/docker-entrypoint-initdb.d/init.sql
 
   zookeeper:
     image: "confluentinc/cp-zookeeper:6.1.0"
