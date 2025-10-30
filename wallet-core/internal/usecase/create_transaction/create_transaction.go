@@ -83,7 +83,7 @@ func (uc *CreateTransactionUseCase) Execute(ctx context.Context, input CreateTra
 			return err
 		}
 
-		err = transactionRepository.Create(transaction)
+		err = accountRepository.UpdateBalance(accountFrom)
 		if err != nil {
 			return err
 		}
